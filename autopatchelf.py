@@ -22,6 +22,7 @@ interpreter_path: Path = None  # type: ignore
 interpreter_osabi: str = None  # type: ignore
 interpreter_arch: str = None  # type: ignore
 libc_lib: Path = None  # type: ignore
+patchelf: str = None  # type: ignore
 
 
 @contextmanager
@@ -224,7 +225,7 @@ def auto_patchelf_file(
         print("setting interpreter of", path)
         subprocess.run(
             [
-                "patchelf",
+                patchelf,
                 "--set-interpreter",
                 interpreter_path.as_posix(),
                 path.as_posix(),
@@ -266,7 +267,7 @@ def auto_patchelf_file(
     if rpath:
         print("setting RPATH to:", rpath_str)
         subprocess.run(
-            ["patchelf", "--set-rpath", rpath_str, path.as_posix()], check=True
+            [patchelf, "--set-rpath", rpath_str, path.as_posix()], check=True
         )
 
     return dependencies
@@ -368,6 +369,12 @@ def main() -> None:
         help="Paths to append to all runtime paths unconditionally",
     )
     parser.add_argument(
+        "--patchelf",
+        type=str,
+        default="patchelf",
+        help="Path to the patchelf binary. Defaults to patchelf.",
+    )
+    parser.add_argument(
         "--bintools",
         type=str,
         default=os.getenv("NIX_BINTOOLS"),
@@ -375,6 +382,8 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+
+    patchelf = args.patchelf
 
     if not args.bintools:
         sys.exit("Failed to find bintools.")
