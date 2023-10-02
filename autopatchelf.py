@@ -221,17 +221,12 @@ def auto_patchelf_file(
         return []
 
     rpath = []
+
+    patchelf_args = []
+
     if file_is_dynamic_executable:
         print("setting interpreter of", path)
-        subprocess.run(
-            [
-                patchelf,
-                "--set-interpreter",
-                interpreter_path.as_posix(),
-                path.as_posix(),
-            ],
-            check=True,
-        )
+        patchelf_args += ["--set-interpreter", interpreter_path.as_posix()]
         rpath += runtime_deps
 
     print("searching for dependencies of", path)
@@ -266,9 +261,10 @@ def auto_patchelf_file(
 
     if rpath:
         print("setting RPATH to:", rpath_str)
-        subprocess.run(
-            [patchelf, "--set-rpath", rpath_str, path.as_posix()], check=True
-        )
+        patchelf_args += ["--set-rpath", rpath_str]
+
+    if patchelf_args:
+        subprocess.call([patchelf, *patchelf_args, path.as_posix()], check=True)
 
     return dependencies
 
