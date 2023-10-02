@@ -321,6 +321,11 @@ def auto_patchelf(
 
 
 def main() -> None:
+    global interpreter_path
+    global interpreter_osabi
+    global interpreter_arch
+    global libc_lib
+
     parser = argparse.ArgumentParser(
         prog="auto-patchelf",
         description="auto-patchelf tries as hard as possible to patch the"
