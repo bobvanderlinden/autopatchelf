@@ -325,6 +325,7 @@ def main() -> None:
     global interpreter_osabi
     global interpreter_arch
     global libc_lib
+    global patchelf
 
     parser = argparse.ArgumentParser(
         prog="auto-patchelf",
