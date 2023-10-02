@@ -366,6 +366,7 @@ def main() -> None:
         "--append-rpaths",
         nargs="*",
         type=Path,
+        default=[],
         help="Paths to append to all runtime paths unconditionally",
     )
     parser.add_argument(
