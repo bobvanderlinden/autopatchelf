@@ -390,6 +390,7 @@ def main() -> None:
 
     if not args.bintools:
         sys.exit("Failed to find bintools.")
+
     nix_support = Path(args.bintools) / "nix-support"
     dynamic_linker = nix_support / "dynamic-linker"
     interpreter_path = Path(dynamic_linker.read_text().strip())
