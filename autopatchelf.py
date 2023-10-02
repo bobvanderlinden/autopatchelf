@@ -18,6 +18,11 @@ from elftools.elf.dynamic import DynamicSection  # type: ignore
 from elftools.elf.elffile import ELFFile  # type: ignore
 from elftools.elf.enums import ENUM_E_TYPE, ENUM_EI_OSABI  # type: ignore
 
+interpreter_path: Path = None  # type: ignore
+interpreter_osabi: str = None  # type: ignore
+interpreter_arch: str = None  # type: ignore
+libc_lib: Path = None  # type: ignore
+
 
 @contextmanager
 def open_elf(path: Path) -> Iterator[ELFFile]:
@@ -362,10 +367,32 @@ def main() -> None:
         type=Path,
         help="Paths to append to all runtime paths unconditionally",
     )
+    parser.add_argument(
+        "--bintools",
+        type=str,
+        default=os.getenv("NIX_BINTOOLS"),
+        help="Path to the bintools package. Defaults to $NIX_BINTOOLS.",
+    )
 
-    print("automatically fixing dependencies for ELF files")
     args = parser.parse_args()
-    pprint.pprint(vars(args))
+
+    if not args.bintools:
+        sys.exit("Failed to find bintools.")
+    nix_support = Path(args.bintools) / "nix-support"
+    dynamic_linker = nix_support / "dynamic-linker"
+    interpreter_path = Path(dynamic_linker.read_text().strip())
+    orig_libc = nix_support / "orig-libc"
+    libc_lib = Path(orig_libc.read_text().strip()) / "lib"
+
+    with open_elf(interpreter_path) as interpreter:
+        interpreter_osabi = get_osabi(interpreter)
+        interpreter_arch = get_arch(interpreter)
+
+    if not interpreter_osabi:
+        sys.exit("Failed to determine osabi from interpreter!")
+
+    if not interpreter_arch:
+        sys.exit("Failed to determine arch from interpreter!")
 
     auto_patchelf(
         args.paths,
@@ -377,21 +404,5 @@ def main() -> None:
     )
 
 
-interpreter_path: Path = None  # type: ignore
-interpreter_osabi: str = None  # type: ignore
-interpreter_arch: str = None  # type: ignore
-libc_lib: Path = None  # type: ignore
-
 if __name__ == "__main__":
-    nix_support = Path(os.environ["NIX_BINTOOLS"]) / "nix-support"
-    interpreter_path = Path((nix_support / "dynamic-linker").read_text().strip())
-    libc_lib = Path((nix_support / "orig-libc").read_text().strip()) / "lib"
-
-    with open_elf(interpreter_path) as interpreter:
-        interpreter_osabi = get_osabi(interpreter)
-        interpreter_arch = get_arch(interpreter)
-
-    if interpreter_arch and interpreter_osabi and interpreter_path and libc_lib:
-        main()
-    else:
-        sys.exit("Failed to parse dynamic linker (ld) properties.")
+    main()
