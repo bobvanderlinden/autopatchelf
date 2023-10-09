@@ -281,7 +281,7 @@ def auto_patchelf_file(
 def auto_patchelf(
     paths_to_patch: List[Path],
     lib_dirs: List[Path],
-    runtime_deps: List[Path],
+    runtime_deps: List[Path] = [],
     recursive: bool = True,
     ignore_missing: List[str] = [],
     append_rpaths: List[Path] = [],
@@ -340,6 +340,7 @@ def main() -> None:
         "--ignore-missing",
         nargs="*",
         type=str,
+        default=[],
         help="Do not fail when some dependencies are not found.",
     )
     parser.add_argument(
@@ -368,6 +369,7 @@ def main() -> None:
         "--runtime-dependencies",
         nargs="*",
         type=Path,
+        default=[],
         help="Paths to prepend to the runtime path of executable binaries."
         " Subject to deduplication, which may imply some reordering.",
     )
