@@ -266,10 +266,9 @@ def auto_patchelf_file(
 
     rpath.extend(append_rpaths)
 
-    # Dedup the rpath
-    rpath_str = ":".join(dict.fromkeys(map(Path.as_posix, rpath)))
-
     if rpath:
+        # Dedup the rpath
+        rpath_str = ":".join(dict.fromkeys(map(Path.as_posix, rpath)))
         logger.debug("setting RPATH to %s", rpath_str)
         patchelf_args += ["--set-rpath", rpath_str]
 
