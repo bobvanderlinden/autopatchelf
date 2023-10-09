@@ -273,7 +273,7 @@ def auto_patchelf_file(
         patchelf_args += ["--set-rpath", rpath_str]
 
     if patchelf_args:
-        subprocess.call([patchelf, *patchelf_args, path.as_posix()], check=True)
+        subprocess.run([patchelf, *patchelf_args, path.as_posix()], check=True)
 
     return dependencies
 
