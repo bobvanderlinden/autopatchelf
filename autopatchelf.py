@@ -294,12 +294,16 @@ def auto_patchelf(
     populate_cache(paths_to_patch, recursive)
     populate_cache(lib_dirs)
 
-    dependencies = []
-    for path in chain.from_iterable(glob(p, "*", recursive) for p in paths_to_patch):
-        if not path.is_symlink() and path.is_file():
-            dependencies += auto_patchelf_file(path, runtime_deps, append_rpaths)
+    dependencies = [
+        dependency
+        for directory_path in paths_to_patch
+        for file_path in glob(directory_path, "*", recursive)
+        if file_path.is_file()
+        if not file_path.is_symlink()
+        for dependency in auto_patchelf_file(file_path, runtime_deps, append_rpaths)
+    ]
 
-    missing = [dep for dep in dependencies if not dep.found]
+    missing = [dependency for dependency in dependencies if not dependency.found]
 
     # Print a summary of the missing dependencies at the end
     logger.debug("%s dependencies could not be satisfied", len(missing))
