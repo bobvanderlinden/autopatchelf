@@ -18,6 +18,10 @@ from elftools.elf.dynamic import DynamicSection  # type: ignore
 from elftools.elf.elffile import ELFFile  # type: ignore
 from elftools.elf.enums import ENUM_E_TYPE, ENUM_EI_OSABI  # type: ignore
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 interpreter_path: Path = None  # type: ignore
 interpreter_osabi: str = None  # type: ignore
 interpreter_arch: str = None  # type: ignore
@@ -187,29 +191,35 @@ def auto_patchelf_file(
         with open_elf(path) as elf:
             if is_static_executable(elf):
                 # No point patching these
-                print(f"skipping {path} because it is statically linked")
+                logger.debug("skipping %s because it is statically linked", path)
                 return []
 
             if elf.num_segments() == 0:
                 # no segment (e.g. object file)
-                print(f"skipping {path} because it contains no segment")
+                logger.debug("skipping %s because it contains no segment", path)
                 return []
 
             file_arch = get_arch(elf)
             if interpreter_arch != file_arch:
                 # Our target architecture is different than this file's
                 # architecture, so skip it.
-                print(
-                    f"skipping {path} because its architecture ({file_arch})"
-                    f" differs from target ({interpreter_arch})"
+                logger.debug(
+                    "skipping %s because its architecture (%s)"
+                    " differs from target (%s)",
+                    path,
+                    file_arch,
+                    interpreter_arch,
                 )
                 return []
 
             file_osabi = get_osabi(elf)
             if not osabi_are_compatible(interpreter_osabi, file_osabi):
-                print(
-                    f"skipping {path} because its OS ABI ({file_osabi}) is"
-                    f" not compatible with target ({interpreter_osabi})"
+                logger.debug(
+                    "skipping %s because its OS ABI (%s) is"
+                    " not compatible with target (%s)",
+                    path,
+                    file_osabi,
+                    interpreter_osabi,
                 )
                 return []
 
@@ -225,11 +235,11 @@ def auto_patchelf_file(
     patchelf_args = []
 
     if file_is_dynamic_executable:
-        print("setting interpreter of", path)
+        logger.debug("setting interpreter of %s", path)
         patchelf_args += ["--set-interpreter", interpreter_path.as_posix()]
         rpath += runtime_deps
 
-    print("searching for dependencies of", path)
+    logger.debug("searching for dependencies of %s", path)
     dependencies = []
     # Be sure to get the output of all missing dependencies instead of
     # failing at the first one, because it's more useful when working
@@ -249,10 +259,10 @@ def auto_patchelf_file(
         if found_dependency := find_dependency(dep.name, file_arch, file_osabi):
             rpath.append(found_dependency)
             dependencies.append(Dependency(path, dep, True))
-            print(f"    {dep} -> found: {found_dependency}")
+            logger.debug("    %s -> found: %s", dep, found_dependency)
         else:
             dependencies.append(Dependency(path, dep, False))
-            print(f"    {dep} -> not found!")
+            logger.debug("    %s -> not found!", dep)
 
     rpath.extend(append_rpaths)
 
@@ -260,7 +270,7 @@ def auto_patchelf_file(
     rpath_str = ":".join(dict.fromkeys(map(Path.as_posix, rpath)))
 
     if rpath:
-        print("setting RPATH to:", rpath_str)
+        logger.debug("setting RPATH to %s", rpath_str)
         patchelf_args += ["--set-rpath", rpath_str]
 
     if patchelf_args:
@@ -293,18 +303,16 @@ def auto_patchelf(
     missing = [dep for dep in dependencies if not dep.found]
 
     # Print a summary of the missing dependencies at the end
-    print(f"auto-patchelf: {len(missing)} dependencies could not be satisfied")
+    logger.debug("%s dependencies could not be satisfied", len(missing))
     failure = False
     for dep in missing:
         for pattern in ignore_missing:
             if fnmatch(dep.name.name, pattern):
-                print(
-                    f"warn: auto-patchelf ignoring missing {dep.name} wanted by {dep.file}"
-                )
+                logger.warn("ignoring missing %s wanted by %s", dep.name, dep.file)
                 break
         else:
-            print(
-                f"error: auto-patchelf could not satisfy dependency {dep.name} wanted by {dep.file}"
+            logger.error(
+                "could not satisfy dependency %s wanted by %s", dep.name, dep.file
             )
             failure = True
 
