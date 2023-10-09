@@ -392,7 +392,7 @@ def main() -> None:
         help="Path to the bintools package. Defaults to $NIX_BINTOOLS.",
     )
     parser.add_argument(
-        "-v", "--verbose", action="count", help="increase output verbosity"
+        "-v", "--verbose", default=0, action="count", help="increase output verbosity"
     )
 
     args = parser.parse_args()
@@ -409,7 +409,7 @@ def main() -> None:
     libc_lib = Path(orig_libc.read_text().strip()) / "lib"
 
     verbosity = [logging.WARN, logging.INFO, logging.DEBUG]
-    logging.basicConfig(level=verbosity[min(args.verbose or 0, len(verbosity) - 1)])
+    logging.basicConfig(level=verbosity[min(args.verbose, len(verbosity) - 1)])
 
     with open_elf(interpreter_path) as interpreter:
         interpreter_osabi = get_osabi(interpreter)
