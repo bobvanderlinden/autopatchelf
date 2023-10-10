@@ -4,6 +4,7 @@
   languages.python = {
     enable = true;
     poetry.enable = true;
+    poetry.install.installRootPackage = true;
     package = pkgs.python312;
   };
   packages = [

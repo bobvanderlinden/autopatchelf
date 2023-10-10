@@ -5,6 +5,9 @@ description = ""
 authors = ["Bob van der Linden <bobvanderlinden@gmail.com>"]
 readme = "README.md"
 
+[tool.poetry.scripts]
+autopatchelf = "autopatchelf:main"
+
 [tool.poetry.dependencies]
 python = "^3.10"
 pyelftools = "^0.30"
