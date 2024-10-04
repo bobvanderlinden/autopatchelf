@@ -12,8 +12,11 @@
       forAllSystems = f: builtins.listToAttrs (map (name: { inherit name; value = f name; }) systems);
     in
     {
-      packages = forAllSystems (system: {
-        default = poetry2nix.legacyPackages.${system}.mkPoetryApplication {
+      packages = forAllSystems (system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+        in {
+        default = (poetry2nix.lib.mkPoetry2Nix { inherit pkgs; }).mkPoetryApplication {
           projectDir = ./.;
           extras = [ ];
         };
